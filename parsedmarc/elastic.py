@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from elasticsearch_dsl.search import Q
 from elasticsearch_dsl import connections, Object, Document, Index, Nested, \
@@ -296,7 +296,7 @@ def save_aggregate_report_to_elasticsearch(aggregate_report,
             AlreadySaved
     """
     logger.info("Saving aggregate report to Elasticsearch")
-    aggregate_report = aggregate_report.copy()
+    aggregate_report = defaultify(aggregate_report.copy())
     metadata = aggregate_report["report_metadata"]
     org_name = metadata["org_name"]
     report_id = metadata["report_id"]
@@ -429,7 +429,7 @@ def save_forensic_report_to_elasticsearch(forensic_report,
 
         """
     logger.info("Saving forensic report to Elasticsearch")
-    forensic_report = forensic_report.copy()
+    forensic_report = defaultify(forensic_report.copy())
     sample_date = None
     if forensic_report["parsed_sample"]["date"] is not None:
         sample_date = forensic_report["parsed_sample"]["date"]
@@ -548,3 +548,9 @@ def save_forensic_report_to_elasticsearch(forensic_report,
     except KeyError as e:
         raise InvalidForensicReport(
             "Forensic report missing required field: {0}".format(e.__str__()))
+
+
+def defaultify(d):
+    if not isinstance(d, dict):
+        return d
+    return defaultdict(lambda: None, {k: defaultify(v) for k, v in d.items()})
